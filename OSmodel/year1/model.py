@@ -14,21 +14,17 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.inspection import permutation_importance
 import joblib
 
-
 warnings.filterwarnings('ignore')
 
-# 读取训练数据和测试数据
 train_data = pd.read_csv('trainSet.csv', index_col=0)
 test_data = pd.read_csv('testSet.csv', index_col=0)
 
-# 预处理：分割特征和标签
 X_train = train_data.drop('Class', axis=1)
 y_train = train_data['Class'].apply(lambda x: 1 if x == 'Pos' else 0)
 
 X_test = test_data.drop('Class', axis=1)
 y_test = test_data['Class'].apply(lambda x: 1 if x == 'Pos' else 0)
 
-# 定义模型
 models = {
     'RandomForest': RandomForestClassifier(random_state=42),
     'XGBoost': XGBClassifier(random_state=42, use_label_encoder=False, eval_metric='logloss'),
@@ -41,7 +37,6 @@ param_grids = {
     'LogisticRegression': {'C': [0.1, 1, 5, 10]}
 }
 
-# 训练所有模型并保存最优模型
 best_models = {}
 
 for model_name, model in models.items():
@@ -52,7 +47,6 @@ for model_name, model in models.items():
     print(f"Best Model Parameters for {model_name}: {grid_search.best_params_}")
     best_models[model_name] = best_model
 
-# 进行10次循环，每次从测试集中随机挑选50%的样本进行预测
 results = []
 importance_results = []
 
@@ -87,7 +81,6 @@ for i in range(10):
             'MCC': mcc
         })
 
-        # **计算Permutation Importance**
         perm_importance = permutation_importance(best_model, X_test_sample, y_test_sample, n_repeats=5, random_state=42)
         perm_importance.importances_mean[perm_importance.importances_mean < 0] = 0
         total_importance = perm_importance.importances_mean.sum() + 0.1
@@ -105,17 +98,14 @@ for i in range(10):
         for feature, importance in zip(X_train.columns, relative_importance):
             print(f"{feature}: {importance:.4f}")
 
-# 保存评估结果
 results_df = pd.DataFrame(results)
 importance_df = pd.DataFrame(importance_results)
 
 results_df.to_csv('result.csv', index=False)
 importance_df.to_csv('feature_importance.csv', index=False)
 
-# 获取最佳的随机森林模型（当前代码中是第5年的模型）
 rf_best_model = best_models['RandomForest']
-# 保存时加上年份，确保不会与其他年份的模型冲突
-year = 1  # 这是第5年的模型
+year = 1
 model_filename = f"random_forest_model_year{year}.pkl"
 joblib.dump(rf_best_model, model_filename)
-print(f"第 {year} 年的随机森林模型已保存为 '{model_filename}'")
+print(f"Random Forest model for year {year} has been saved as '{model_filename}'")
